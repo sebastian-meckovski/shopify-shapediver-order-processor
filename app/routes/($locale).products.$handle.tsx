@@ -11,6 +11,7 @@ import {
 import {ProductPrice} from '~/components/ProductPrice';
 import {ProductImage} from '~/components/ProductImage';
 import {ProductForm} from '~/components/ProductForm';
+import { useEffect } from 'react';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [
@@ -77,6 +78,23 @@ function loadDeferredData({context, params}: LoaderFunctionArgs) {
 }
 
 export default function Product() {
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const {createSession} = await import('@shapediver/viewer.session');
+
+        const session = await createSession({
+          ticket: 'ticketId',
+          modelViewUrl: 'modelViewUrl',
+        });
+      } catch (error) {
+        console.error('Error initializing the session or viewport:', error);
+      }
+    };
+    init();
+  }, []);
+  
   const {product} = useLoaderData<typeof loader>();
 
   // Optimistically selects a variant with given available variant information
