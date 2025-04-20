@@ -1,0 +1,16 @@
+{
+  "name": "shopify-shapediver-order-processor",
+  "version": "1.0.0",
+  "description": "This is a Node server that serves a shopify webshop ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "express": "^4.21.2",
+    "@shapediver/viewer.session": "3.8.12"
+  }
+}
