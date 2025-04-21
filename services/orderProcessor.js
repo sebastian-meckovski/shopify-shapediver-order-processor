@@ -15,17 +15,55 @@ function saveOrder(orderData) {
   });
 }
 
-function processOrder(orderData) {
+async function processOrder(orderData) {
+  const accessToken = process.env.SHOPIFY_ACCESS_TOKEN; // Replace with your actual token
+  const shop = 'rar1g1-wc.myshopify.com';
+  const apiVersion = '2025-01';
+
   if (orderData.line_items && Array.isArray(orderData.line_items)) {
-    orderData.line_items.forEach(item => {
+    for (const item of orderData.line_items) {
       console.log(`Line Item: ${item.name}`);
       const modelStateProp = item.properties?.find(p => p.name === 'modelStateId');
+
       if (modelStateProp) {
         console.log(`  modelStateId: ${modelStateProp.value}`);
       } else {
         console.log(`  modelStateId: Not found`);
       }
-    });
+
+      const productId = item.product_id;
+
+      if (productId) {
+        try {
+          const url = `https://${shop}/admin/api/${apiVersion}/products/${productId}/metafields.json?namespace=custom&key=ticketid`;
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'X-Shopify-Access-Token': accessToken,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch metafield for product ${productId} - ${response.status}`);
+          }
+
+          const data = await response.json();
+          const ticketId = data.metafields?.[0]?.value;
+
+          if (ticketId) {
+            console.log(`  ticketid: ${ticketId}`);
+          } else {
+            console.log(`  ticketid: Not found`);
+          }
+
+        } catch (err) {
+          console.error(`Error fetching metafield for product ${productId}:`, err);
+        }
+      } else {
+        console.log(`  product_id not available for line item`);
+      }
+    }
   }
 }
 
