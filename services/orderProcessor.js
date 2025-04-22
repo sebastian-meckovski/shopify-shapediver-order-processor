@@ -1,5 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const { createShapediverSession } = require('../shapediver/createSession');
+
 
 const ordersDir = path.join(__dirname, '..', 'orders');
 
@@ -55,6 +57,20 @@ async function processOrder(orderData) {
             console.log(`  ticketid: ${ticketId}`);
           } else {
             console.log(`  ticketid: Not found`);
+          }
+          
+          const shapediverSession = await createShapediverSession(ticketId, modelStateProp.value)
+            .then(async (response) => {
+              if (!response.ok) {
+                const err = await response.json();
+                throw new Error(`${err.message} (${err.error})`);
+              }
+              return response.json();
+            })
+            .catch((err) => console.error(err));
+
+          if (shapediverSession?.modelState) {
+            console.log(shapediverSession?.modelState);
           }
 
         } catch (err) {
