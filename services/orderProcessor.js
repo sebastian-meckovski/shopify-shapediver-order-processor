@@ -1,9 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const { createShapediverSession } = require('../shapediver/createSession');
+const { createShapediverExport } = require("../shapediver/createExport");
+const { processExport } = require("../shapediver/processExport");
 
-
-const ordersDir = path.join(__dirname, '..', 'orders');
+const ordersDir = path.join(__dirname, "..", "orders");
 
 function saveOrder(orderData) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -69,10 +70,37 @@ async function processOrder(orderData) {
             })
             .catch((err) => console.error(err));
 
-          if (shapediverSession?.modelState) {
-            console.log(shapediverSession?.modelState);
-          }
+          // 1. sessionId is right on the root
+          const sessionId = shapediverSession.sessionId;
 
+          // 2. parameters live under modelState.parameters
+          const parameters = shapediverSession.modelState.parameters;
+
+          // 3. exportId is the key of the single property under `exports`
+          const exportKeys = Object.keys(shapediverSession.exports);
+          const exportId = exportKeys.length > 0 ? exportKeys[0] : null;
+
+          try {
+            const exportResponse = await createShapediverExport(sessionId, exportId, parameters);
+            if (!exportResponse.ok) {
+              const errorBody = await exportResponse.json();
+              throw new Error(`${errorBody.message} (${errorBody.error})`);
+            }
+            const exportResult = await exportResponse.json();
+
+            // save file from exportResult
+            // locate download URL and filename
+            const expObj = exportResult.exports[exportId];
+            const contentItem = expObj.content && expObj.content[0];
+            if (contentItem && contentItem.href) {
+              processExport(exportResult, exportId);
+            } else {
+              console.error("No downloadable content found in exportResult.exports for", exportId);
+            }
+            console.log("Export result:", exportResult);
+          } catch (exportErr) {
+            console.error("Export error:", exportErr);
+          }
         } catch (err) {
           console.error(`Error fetching metafield for product ${productId}:`, err);
         }
@@ -85,5 +113,5 @@ async function processOrder(orderData) {
 
 module.exports = {
   saveOrder,
-  processOrder
+  processOrder,
 };
