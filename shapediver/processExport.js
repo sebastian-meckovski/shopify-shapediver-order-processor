@@ -7,7 +7,7 @@ const exportsDir = path.join(__dirname, '..', 'exports');
 
 function generateUniqueFilename(originalFilename) {
   const uniqueId = crypto.randomUUID();
-  return `${uniqueId}-${originalFilename}`;
+  return { uniqueId, filename: `${uniqueId}-${originalFilename}` };
 }
 
 async function processExport(exportResult, exportId) {
@@ -17,7 +17,7 @@ async function processExport(exportResult, exportId) {
   if (contentItem && contentItem.href) {
     const downloadUrl = contentItem.href;
     const originalFilename = expObj.filename || `export-${exportId}.${contentItem.format}`;
-    const uniqueFilename = generateUniqueFilename(originalFilename);
+    const { uniqueId, filename: uniqueFilename } = generateUniqueFilename(originalFilename);
 
     // ensure exports directory exists
     fs.mkdirSync(exportsDir, { recursive: true });
@@ -40,11 +40,15 @@ async function processExport(exportResult, exportId) {
 
       await fs.promises.writeFile(filePath, buffer);
       console.log(`File downloaded and saved to ${filePath}`);
+
+      return uniqueId;
     } catch (err) {
       console.error('Error downloading file:', err);
+      throw err;
     }
   } else {
     console.error('No downloadable content found in exportResult.exports for', exportId);
+    throw new Error('No downloadable content found');
   }
 }
 

@@ -1,32 +1,32 @@
-const fs = require('fs');
-const path = require('path');
-const { createShapediverSession } = require('../shapediver/createSession');
+const fs = require("fs");
+const path = require("path");
+const { createShapediverSession } = require("../shapediver/createSession");
 const { createShapediverExport } = require("../shapediver/createExport");
 const { processExport } = require("../shapediver/processExport");
 
 const ordersDir = path.join(__dirname, "..", "orders");
 
 function saveOrder(orderData) {
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const filePath = path.join(ordersDir, `order-${timestamp}.json`);
 
   fs.writeFile(filePath, JSON.stringify(orderData, null, 2), (err) => {
     if (err) {
-      return console.error('Error writing file:', err);
+      return console.error("Error writing file:", err);
     }
-    console.log('Order data saved to:', filePath);
+    console.log("Order data saved to:", filePath);
   });
 }
 
 async function processOrder(orderData) {
   const accessToken = process.env.SHOPIFY_ACCESS_TOKEN; // Replace with your actual token
-  const shop = 'rar1g1-wc.myshopify.com';
-  const apiVersion = '2025-01';
+  const shop = "rar1g1-wc.myshopify.com";
+  const apiVersion = "2025-01";
 
   if (orderData.line_items && Array.isArray(orderData.line_items)) {
     for (const item of orderData.line_items) {
       console.log(`Line Item: ${item.name}`);
-      const modelStateProp = item.properties?.find(p => p.name === 'modelStateId');
+      const modelStateProp = item.properties?.find((p) => p.name === "modelStateId");
 
       if (modelStateProp) {
         console.log(`  modelStateId: ${modelStateProp.value}`);
@@ -40,15 +40,17 @@ async function processOrder(orderData) {
         try {
           const url = `https://${shop}/admin/api/${apiVersion}/products/${productId}/metafields.json?namespace=custom&key=ticketid`;
           const response = await fetch(url, {
-            method: 'GET',
+            method: "GET",
             headers: {
-              'X-Shopify-Access-Token': accessToken,
-              'Content-Type': 'application/json'
-            }
+              "X-Shopify-Access-Token": accessToken,
+              "Content-Type": "application/json",
+            },
           });
 
           if (!response.ok) {
-            throw new Error(`Failed to fetch metafield for product ${productId} - ${response.status}`);
+            throw new Error(
+              `Failed to fetch metafield for product ${productId} - ${response.status}`
+            );
           }
 
           const data = await response.json();
@@ -59,7 +61,7 @@ async function processOrder(orderData) {
           } else {
             console.log(`  ticketid: Not found`);
           }
-          
+
           const shapediverSession = await createShapediverSession(ticketId, modelStateProp.value)
             .then(async (response) => {
               if (!response.ok) {
@@ -93,7 +95,9 @@ async function processOrder(orderData) {
             const expObj = exportResult.exports[exportId];
             const contentItem = expObj.content && expObj.content[0];
             if (contentItem && contentItem.href) {
-              processExport(exportResult, exportId);
+              const fileId = await processExport(exportResult, exportId);
+              console.log('fileId:')
+              console.log(fileId)
             } else {
               console.error("No downloadable content found in exportResult.exports for", exportId);
             }
