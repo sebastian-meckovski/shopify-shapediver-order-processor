@@ -5,19 +5,14 @@ const crypto = require('crypto');
 // Directory to save exports
 const exportsDir = path.join(__dirname, '..', 'exports');
 
-function generateUniqueFilename(originalFilename) {
-  const uniqueId = crypto.randomUUID();
-  return { uniqueId, filename: `${uniqueId}-${originalFilename}` };
-}
-
-async function processExport(exportResult, exportId) {
+async function processExport(exportResult, exportId, lineItemId) {
   const expObj = exportResult.exports[exportId];
   const contentItem = expObj.content && expObj.content[0];
 
   if (contentItem && contentItem.href) {
     const downloadUrl = contentItem.href;
-    const originalFilename = expObj.filename || `export-${exportId}.${contentItem.format}`;
-    const { uniqueId, filename: uniqueFilename } = generateUniqueFilename(originalFilename);
+    const originalFilename = expObj.filename
+    const fileName = `${lineItemId} - ${originalFilename}`;
 
     // ensure exports directory exists
     fs.mkdirSync(exportsDir, { recursive: true });
@@ -25,7 +20,7 @@ async function processExport(exportResult, exportId) {
     console.log('Trying to download and save file...');
     console.log('URL:', downloadUrl);
     console.log('Original Filename:', originalFilename);
-    console.log('Unique Filename:', uniqueFilename);
+    console.log('Saving Filename:', fileName);
 
     try {
       // Use Fetch API (Node.js 20+)
@@ -36,12 +31,10 @@ async function processExport(exportResult, exportId) {
 
       const arrayBuffer = await response.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      const filePath = path.join(exportsDir, uniqueFilename);
+      const filePath = path.join(exportsDir, fileName);
 
       await fs.promises.writeFile(filePath, buffer);
       console.log(`File downloaded and saved to ${filePath}`);
-
-      return uniqueId;
     } catch (err) {
       console.error('Error downloading file:', err);
       throw err;

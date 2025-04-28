@@ -95,9 +95,8 @@ async function processOrder(orderData) {
             const expObj = exportResult.exports[exportId];
             const contentItem = expObj.content && expObj.content[0];
             if (contentItem && contentItem.href) {
-              const fileId = await processExport(exportResult, exportId);
-              console.log('fileId:')
-              console.log(fileId)
+              await processExport(exportResult, exportId, item.id);
+
             } else {
               console.error("No downloadable content found in exportResult.exports for", exportId);
             }
